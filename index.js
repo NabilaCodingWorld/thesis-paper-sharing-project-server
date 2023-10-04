@@ -12,52 +12,83 @@ app.use(express.json());
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.4zx1pf4.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
 });
 
 async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    try {
+        // Connect the client to the server	(optional starting in v4.7)
+        await client.connect();
 
 
-    const thesisPaperCollection = client.db('thesis-paper-sharing-project').collection('thesisPaper');
+        const thesisPaperCollection = client.db('thesis-paper-sharing-project').collection('thesisPaper');
+
+        const thesisIdeaCollection = client.db('thesis-paper-sharing-project').collection('thesisIdea');
 
 
-    app.get('/thesisPaper', async(req, res)=>{
-        const result = await thesisPaperCollection.find().toArray();
+        // get thesis paper
+        app.get('/thesisPaper', async (req, res) => {
+            const result = await thesisPaperCollection.find().toArray();
 
-        res.send(result);
-    })
+            res.send(result);
+        })
 
 
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
-  }
+        // single data load from thesis paper
+        app.get('/thesisPaper/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+
+            const options = {
+                projection: {
+                    img: 1,
+                    author: 1,
+                    description: 1,
+                    category: 1
+
+                }
+            }
+
+            const result = await thesisPaperCollection.findOne(query, options);
+            res.send(result);
+        });
+
+
+        // get thesis idea
+        app.get('/thesisIdea', async (req, res) => {
+            const result = await thesisIdeaCollection.find().toArray();
+
+            res.send(result);
+        })
+
+
+        // Send a ping to confirm a successful connection
+        await client.db("admin").command({ ping: 1 });
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    } finally {
+        // Ensures that the client will close when you finish/error
+        // await client.close();
+    }
 }
 run().catch(console.dir);
 
 
 
 
-app.get('/', (req, res)=>{
+app.get('/', (req, res) => {
     res.send('Nabila is comming')
 })
 
-app.listen(port, ()=>{
+app.listen(port, () => {
     console.log(`Nabila is sitting soon ${port}`)
 })
 
