@@ -112,6 +112,13 @@ async function run() {
             res.send(result)
         })
 
+        // delete thesis paper
+        app.delete('/thesisPaper/:id', verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await thesisPaperCollection.deleteOne(query);
+            res.send(result);
+        })
 
         // get thesis idea
         app.get('/thesisIdea', async (req, res) => {
@@ -119,6 +126,8 @@ async function run() {
 
             res.send(result);
         })
+
+
 
 
         // users related API start
@@ -162,8 +171,8 @@ async function run() {
         })
 
 
-         // delete admin
-         app.delete('/users/admin/:id', async (req, res) => {
+        // delete admin
+        app.delete('/users/admin/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await usersCollection.deleteOne(query);
