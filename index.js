@@ -46,7 +46,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+         client.connect();
 
 
         const thesisPaperCollection = client.db('thesis-paper-sharing-project').collection('thesisPaper');
@@ -54,6 +54,30 @@ async function run() {
         const thesisIdeaCollection = client.db('thesis-paper-sharing-project').collection('thesisIdea');
 
         const usersCollection = client.db('thesis-paper-sharing-project').collection('users');
+
+
+         // const indexKeys = { category: 1, name: 1 };
+
+        // const indexOptions = { name: 'nameCategory' };
+
+        // const result = await menuCollection.createIndex(indexKeys, indexOptions);
+
+
+        // Search
+        app.get('/paperSearch/:text', async (req, res) => {
+            const searchText = req.params.text;
+            const result = await thesisPaperCollection
+                .find({
+                    $or: [
+                        { category: { $regex: searchText, $options: 'i' } },
+                        { author: { $regex: searchText, $options: 'i' } }
+                    ]
+                })
+                .toArray();
+            res.send(result);
+        });
+
+
 
 
         // JWT Token
@@ -78,9 +102,24 @@ async function run() {
 
 
         // get thesis paper
-        app.get('/thesisPaper', async (req, res) => {
-            const result = await thesisPaperCollection.find().toArray();
+        app.get('/thesisPaperAll', async (req, res) => {
+            const result = await thesisPaperCollection.find().sort({ createdAt: -1 }).toArray();
 
+            res.send(result);
+        })
+
+        // patch thesis paper
+        app.patch('/thesisPaperAll/:id', async(req, res)=>{
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)};
+            const updatedPaper = req.body;
+            console.log(updatedPaper);
+            const updateDoc = {
+                $set: {
+                    status: updatedPaper.status
+                }
+            }
+            const result = await thesisPaperCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
 
@@ -92,9 +131,9 @@ async function run() {
 
             const options = {
                 projection: {
-                    img: 1,
+                    photo: 1,
                     author: 1,
-                    description: 1,
+                    message: 1,
                     category: 1
 
                 }
@@ -108,17 +147,64 @@ async function run() {
         //  post thesis paper
         app.post('/thesisPaper', async (req, res) => {
             const newItem = req.body;
+            newItem.createdAt = new Date(); 
             const result = await thesisPaperCollection.insertOne(newItem);
             res.send(result)
         })
 
+
+         // get some thesis paper
+         app.get('/thesisPaper', async (req, res) => {
+            console.log(req.query.email);
+            let query = {};
+            if (req.query?.email) {
+                query = { email: req.query.email }
+            }
+            const result = await thesisPaperCollection.find(query).sort({ createdAt: -1 }).toArray();
+            res.send(result);
+        })
+
+
         // delete thesis paper
-        app.delete('/thesisPaper/:id', verifyJWT, verifyAdmin, async (req, res) => {
+        app.delete('/thesisPaper/:id',  async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await thesisPaperCollection.deleteOne(query);
             res.send(result);
         })
+
+        // get thesis paper for update
+        app.get('/thesisPaper/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await thesisIdeaCollection.findOne(query);
+            res.send(result);
+
+        })
+
+
+         // update booking
+         app.put('/thesisPaper/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true };
+            const updatedPdf = req.body;
+
+            const booking = {
+                $set: {
+                    photo: updatedPdf.photo,
+                    author: updatedPdf.author,
+                    category: updatedPdf.category,
+                    message: updatedPdf.message,
+
+                }
+            }
+
+            const result = await thesisPaperCollection.updateOne(filter, booking, options);
+            res.send(result)
+
+        })
+
 
         // get thesis idea
         app.get('/thesisIdea', async (req, res) => {
@@ -126,8 +212,6 @@ async function run() {
 
             res.send(result);
         })
-
-
 
 
         // users related API start
