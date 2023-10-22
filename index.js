@@ -101,10 +101,26 @@ async function run() {
         }
 
 
-        // get thesis paper
+        // get thesis paper admin
         app.get('/thesisPaperAll', async (req, res) => {
             const result = await thesisPaperCollection.find().sort({ createdAt: -1 }).toArray();
 
+            res.send(result);
+        })
+        // get thesis paper user
+        app.get('/confirmThesisPaperAll', async (req, res) => {
+            console.log('hit')
+            const result = await thesisPaperCollection.find().sort({ createdAt: -1 }).toArray();
+            const confirmedThesisPaper = result.filter(paper => paper.status === 'confirm')
+
+            res.send(confirmedThesisPaper);
+        })
+
+        // delete thesis paper user
+        app.delete('/confirmThesisPaperAll/:id',  async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await thesisPaperCollection.deleteOne(query);
             res.send(result);
         })
 
@@ -165,7 +181,7 @@ async function run() {
         })
 
 
-        // delete thesis paper
+        // delete thesis paper admin data
         app.delete('/thesisPaper/:id',  async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
